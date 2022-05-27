@@ -14,7 +14,7 @@ setup(
     description="Convert Notion md file to Obsidian md file",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/realpython/reader",
+    url="https://github.com/butterandfly/notion2obsidian",
     author="butterandfly",
     author_email="zero.hero.lin@gmail.com",
     license="MIT",
@@ -25,10 +25,10 @@ setup(
     ],
     packages=["notion2obsidian"],
     include_package_data=True,
-    install_requires=["feedparser", "html2text"],
+    install_requires=["rich"],
     entry_points={
         "console_scripts": [
-            "realpython=reader.__main__:main",
+            "notion2obsidian=notion2obsidian.__main__:main",
         ]
     },
 )

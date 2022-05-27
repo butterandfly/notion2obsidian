@@ -1,6 +1,10 @@
 venv/
+env/
+dist/
 
 __pycache__/
 **/__pycache__/
 
 .pytest_cache
+
+notion2obsidian.egg-info/
