@@ -2,6 +2,7 @@ import re
 import os
 import glob
 import shutil
+import sys
 import urllib.parse
 
 log = print
@@ -10,7 +11,7 @@ log = print
 notelink_regex = r'(?<![!])\[([\w\s\d.\-\&\(\)\:\,]+)\]\(([\w\d.\/?=#%!*\-\(\)\&\,]+\.md)\)'
 filelink_regex = r'\[([\w\s\d.\%\,]+)\]\(([\w\d.\/?=#%!*\,]+\.((png)|(pdf)|(csv)))\)'
 
-def process_filelinks(content: str) -> str:
+def process_filelinks(content: str, attachments_mapping: dict) -> str:
     # Get regex matches
     pattern = re.compile(filelink_regex)
     matches = pattern.finditer(content)
@@ -21,8 +22,10 @@ def process_filelinks(content: str) -> str:
         # Gen new link
         whole_str, file_desc, file_path = match.group(
             0), match.group(1), match.group(2)
-        new_image_path = os.path.join('attachments', file_path)
-        new_link = f'[{file_desc}]({new_image_path})'
+        decoded_name = urllib.parse.unquote(file_path)
+        new_path = os.path.join('attachments', attachments_mapping[decoded_name])
+        new_path = urllib.parse.quote(new_path)
+        new_link = f'[{file_desc}]({new_path})'
 
         # Replace new link
         new_content = new_content.replace(whole_str, new_link)
@@ -94,7 +97,7 @@ def process_all_md(dest: str, mapping: dict, args: dict):
         with open(mdfile, 'r') as f:
             content = '\n'.join(f.readlines())
 
-        new_content = process_filelinks(content)
+        new_content = process_filelinks(content, mapping)
         new_content = process_notelinks(new_content, mapping)
 
         # Optional settings
@@ -117,47 +120,55 @@ def copy_all_md(folder: str, dest: str) -> dict:
     mdfiles = glob.glob(os.path.join(folder, "*.md"))
     for mdfile in mdfiles:
         # Get file name
-        file_name = os.path.basename(mdfile)
-        base_name = os.path.splitext(file_name)[0]
+        filename = os.path.basename(mdfile)
 
         # Gen new name
-        base_name_noid = ' '.join(base_name.split(' ')[:-1])
-        new_file_name = base_name_noid + '.md'
-
-        # Replace inlegal characters
-        inlegal_characters = ['\\', '/', ':', '[', ']', '|', '#', '^']
-        for c in inlegal_characters:
-            new_file_name = new_file_name.replace(c, ' ')
+        new_filename = remove_id_from_filename(filename)
+        new_filename = replace_illegal_characters(new_filename)
 
         # Save to mapping
         # If file name is already in mapping, use the original name
-        if new_file_name in md_mapping.values():
-            new_file_name = file_name
+        if new_filename in md_mapping.values():
+            new_filename = filename
 
         # Copy file
-        new_path = os.path.join(dest, new_file_name)
+        new_path = os.path.join(dest, new_filename)
         shutil.copyfile(mdfile, new_path)
-        md_mapping[file_name] = new_file_name
+        md_mapping[filename] = new_filename
 
-        log(f'Copied: {file_name} -> {new_file_name}', 'sub')
+        log(f'Copied: {filename} -> {new_filename}', 'sub')
 
     return md_mapping
 
+def copy_all_attachments(src: str, dest: str) -> dict:
+    """
+    Copy all png/pdf/csv files in src to attachments folder.
 
-def copy_all_attachments(src: str, dest: str) -> None:
+    Return a map of old file name to new file name.
+    """
     log('Start copying all attachments', 'info')
 
     file_types = ['png', 'pdf', 'csv']
+    attachments_mapping = {}
 
     paths = glob.glob(os.path.join(src, "*"))
     for path in paths:
         filename = path.split('/')[-1]
         ext = filename.split('.')[-1]
         if ext in file_types:
-            new_path = os.path.join(dest, 'attachments', filename)
-            shutil.copyfile(path, new_path)
-            log(f'{path} -> {new_path}', 'sub')
+            if ext == 'csv':
+                new_filename = remove_id_from_filename(filename)
+                if new_filename in attachments_mapping.values():
+                    new_filename = filename
+            else:
+                new_filename = filename
 
+            new_path = os.path.join(dest, 'attachments', new_filename)
+            shutil.copyfile(path, new_path)
+            attachments_mapping[filename] = new_filename
+            log(f'{filename} -> {new_filename}', 'sub')
+    
+    return attachments_mapping
 
 def notion2obsidian_nosubdir(args: dict):
     folder = args['src']
@@ -174,14 +185,13 @@ def notion2obsidian_nosubdir(args: dict):
     create_obsidian_folders(dest)
 
     # Copy all attachments
-    copy_all_attachments(folder, dest)
+    attachments_mapping =  copy_all_attachments(folder, dest)
 
     # Copy all md
-    mapping = copy_all_md(folder, dest)
+    mapping = copy_all_md(folder, dest) | attachments_mapping
     process_all_md(dest, mapping, args)
 
     log('🎉 Converting finished!', 'success')
-
 
 def create_obsidian_folders(dest: str):
     """
@@ -191,14 +201,33 @@ def create_obsidian_folders(dest: str):
     attachments_folder = os.path.join(dest, 'attachments')
     os.makedirs(attachments_folder)
 
-
 def input_check(folder: str):
     if not os.path.exists(folder):
         log(f'{folder} not exists!', 'error')
-        raise
-
+        sys.exit(1)
 
 def dest_check(dest: str):
     if os.path.exists(dest):
         log(f'{dest} already exists!', 'error')
-        raise
+        sys.exit(1)
+
+def remove_id_from_filename(filename: str) -> str:
+    """
+    Remove the id from name.
+    My Note someid.md -> My Note.md
+    """
+    basename, ext = os.path.splitext(filename)
+    base_name_noid = ' '.join(basename.split(' ')[:-1])
+    new_filename = base_name_noid + ext
+
+    return new_filename
+
+def replace_illegal_characters(filename: str, ch: str = ' ') -> str:
+    """
+    Replace illegal characters in filename.
+    """
+    inlegal_characters = ['\\', '/', ':', '[', ']', '|', '#', '^']
+    for c in inlegal_characters:
+        filename = filename.replace(c, ch)
+
+    return filename

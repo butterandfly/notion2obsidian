@@ -1,24 +1,21 @@
 from notion2obsidian.n2o import delete_emptylines, process_notelinks
 
 def test_delete_emptylines():
-    content = '''Some words.
-
-
-'''
-    assert delete_emptylines(content) == 'Some words.'
-
-    content = '''A
+    content = '''
+A
 
 B
 '''
     assert delete_emptylines(content) == 'A\nB'
 
+    # Insert an empty line before a heading
     content = '''A
 # B
 '''
     assert delete_emptylines(content) == 'A\n\n# B'
 
-    content = '''A
+    content = '''
+A
 
 ```python
 print('Hello!')

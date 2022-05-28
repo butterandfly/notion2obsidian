@@ -33,8 +33,8 @@ def main() -> None:
 
     parser.add_argument('src', help='note folder exported by Notion', type=str)
 
-    parser.add_argument(
-        '-o', '--output', help='Obsidian md folder', default='', action='store')
+    parser.add_argument('-o', '--output', 
+                        help='Obsidian md folder', default='', action='store')
     parser.add_argument('-l', '--delete-emptylines',
                         help='delete empty lines.', action='store_true')
     parser.add_argument('-q', '--quiet', help='quiet mode.',

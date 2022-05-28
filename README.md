@@ -4,7 +4,7 @@ Notion2obsidian is a utility and python package for convert Notion exported mark
 ## Important
 For now `notion2obsidian` only supports the "no sub folder" structure. Make sure you use the exported options like this:
 
-![No sub folder](attachments/no%20sub%20folder.png)
+![No sub folder](https://raw.githubusercontent.com/butterandfly/notion2obsidian/main/images/no%20sub%20folder.png)
 
 ## Installation
 ```bash

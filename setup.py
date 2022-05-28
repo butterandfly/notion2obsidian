@@ -10,8 +10,8 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="notion2obsidian",
-    version="0.1.0",
-    description="Convert Notion md file to Obsidian md file",
+    version="0.1.1",
+    description="Convert Notion md files to Obsidian md files.",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/butterandfly/notion2obsidian",

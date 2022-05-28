@@ -31,10 +31,13 @@ def test_copy_attachments():
     src = test_notes
     dest = test_notes_obsidian
     n2o.create_obsidian_folders(dest)
-    n2o.copy_all_attachments(src, dest)
+    mapping = n2o.copy_all_attachments(src, dest)
 
     assert path.isfile(path.join(dest, 'attachments/image 1.png'))
     assert path.isfile(path.join(dest, 'attachments/pdf 1.pdf'))
+    assert path.isfile(path.join(dest, 'attachments/db.csv'))
+
+    assert mapping['db someid2.csv'] == 'db.csv'
 
 def test_notion2obsidian_nosubdir():
     src = real_exported
@@ -52,6 +55,7 @@ def test_notion2obsidian_nosubdir():
     assert path.isfile(path.join(dest, 'Room 2.md'))
     assert path.isfile(path.join(dest, 'attachments', 'Untitled.png'))
     assert path.isfile(path.join(dest, 'attachments', 'dummy.pdf'))
+    assert path.isfile(path.join(dest, 'attachments', 'House Database.csv'))
 
 @pytest.fixture(autouse=True)
 def remove_created():
